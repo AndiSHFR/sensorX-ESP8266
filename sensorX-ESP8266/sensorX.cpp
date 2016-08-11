@@ -25,54 +25,39 @@
  * SOFTWARE.
  */
 
+#include <FS.h>
+#include "KeyedStringCollection.h"
 #include "SensorX.h"
 
-
 /**
- * NullStream
- * A Stream based class that does nothing.
- * Very handy to be passed to log functions that require a Stream& to log to.
- * i.e. Stream& debugConsole(Serial); 
- *      -> myFunc(debugConsole);  // Output to the serial port 
- *      -> myFunc(NullStream)     // No output at all
+ * We place strings in the programm memory to leave
+ * more free dynamic memory.
+ * 
  */
+const char CONFIG_FILENAME[]       PROGMEM = "sensorX.conf";
+const char CONFIG_BACKUPFILENAME[] PROGMEM = "sensorX.bak";
 
 
-class NullStream : public Stream{
-public:
-  size_t write( uint8_t u_Data ) { return u_Data, 0x01; }
-  int available( void ) { return 0; }
-  void flush( void ) { }
-  int peek( void ) { return -1; }
-  int read( void ){ return -1; };
-  NullStream( void ) { }
-};
-
-static NullStream nullStream;
 
 void SensorX::debugOut(const char* format, ... ) {
-  if(_debugOutput) {
+  if(_debugOutput && _debugOutputCallback) {
     char buffer[160];
     va_list vargs;
     va_start(vargs, format);
     vsnprintf(buffer, sizeof(buffer) - 1, format, vargs);
     va_end(vargs);
-    buffer[sizeof(buffer)-1] = '\0';
-    _debugOutputStream.print(F("SX: "));
-    _debugOutputStream.println(buffer);
+    _debugOutputCallback(buffer);
   }  
 }
 
 void SensorX::debugOut(const __FlashStringHelper* format, ... ) {
-  if(_debugOutput) {
+  if(_debugOutput && _debugOutputCallback) {
     char buffer[160];
     va_list vargs;
     va_start(vargs, format);
-    vsnprintf(buffer, sizeof(buffer) - 1, (const char*)format, vargs);
+    vsnprintf_P(buffer, sizeof(buffer) - 1, (const char*)format, vargs);
     va_end(vargs);
-    buffer[sizeof(buffer)-1] = '\0';
-    _debugOutputStream.print(F("SX: "));
-    _debugOutputStream.println(buffer);
+    _debugOutputCallback(buffer);
   }  
 }
 
@@ -80,28 +65,33 @@ void SensorX::setDebugOutput(bool flag) {
   _debugOutput = flag;
 }
 
-void SensorX::setDebugOutputStream(Stream& stream) {
-  _debugOutputStream = stream;
+void SensorX::setDebugOutputCallback(void (*func)(const char* text)){
+  _debugOutputCallback = func;
 }
 
-
 void SensorX::begin() {
+
   debugOut(F("begin()"));
 
-  // Initialize the WiFi to a known state in case some software
-  // did "ugly" things with the radio part.
+  // Initialize the WiFi to a known state in case some 
+  // software did "ugly" things with the radio.
   WiFi.mode(WIFI_STA);
   WiFi.disconnect(true);
   delay(500);
+    
+  // debugOut("sensorX: IPv4 = %s", WiFi.localIP().toString().c_str() );
   
+
 }
 
 
 SensorX::~SensorX() {
+  if(_settings) delete(_settings);
 }
 
 
-SensorX::SensorX() : _debugOutputStream(nullStream) {
+SensorX::SensorX() : _debugOutputCallback(0L) {
+  _settings = new KeyedStringCollection();
 }
 
 

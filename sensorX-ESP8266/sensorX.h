@@ -33,18 +33,23 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 
+class KeyedStringCollection;
+
 class SensorX {
   protected:
-    
-    Stream& _debugOutputStream;
+
+    KeyedStringCollection* _settings;
+
     bool _debugOutput;
+    void (*_debugOutputCallback)(const char*);            
+
     void debugOut(const char* format, ... );
     void debugOut(const __FlashStringHelper* format, ... );
 
   public:
 
     void setDebugOutput(bool flag);
-    void setDebugOutputStream(Stream& stream);
+    void setDebugOutputCallback(void (*func)(const char* text));
 
     void begin();
     

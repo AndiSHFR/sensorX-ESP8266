@@ -70,9 +70,17 @@ static const uint8_t PIN_D10 =  1; // GPIO1   - TXD0 (Serial console, UART0)
 static const uint8_t PIN_SD2 =  9; // GPIO9   - SDD2
 static const uint8_t PIN_SD3 = 10; // GPIO10  - SDD3
 
+/**
+ * Define a callback function to enable debug
+ * output of SensorX to the serial port.
+ */
+void sensorXDebugOutputCallback(const char* text) {
+  Serial.print(F("SensorX : "));
+  Serial.println(text);
+}
+
 /*
  * Well, the one and only sensorX instance 
- * We will use Serial for debug output.
  */
 SensorX sensorX;
 
@@ -89,13 +97,13 @@ void setup() {
 
   // Enable diagnostic output from the WiFi libraries.
   // A call to Serial.begin() disables this output.
-  Serial.setDebugOutput(true);
+  Serial.setDebugOutput(false);
   
   // Delay for 2 seconds to stabilize the serial line.
   for(int i = 4; i > 0; i--) { Serial.print("."); delay(500); }
 
-  // Enable debug output to the serial connection
-  sensorX.setDebugOutputStream(Serial);
+  // Set the debug output callback and enable debug output
+  sensorX.setDebugOutputCallback(sensorXDebugOutputCallback);
   sensorX.setDebugOutput(true);
 
   // Initialize sensorX
@@ -105,5 +113,4 @@ void setup() {
 
 
 void loop() {
-
 }
